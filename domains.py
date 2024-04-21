@@ -62,17 +62,19 @@ def check_domain(domain):
         blockPrint()
         result = whois(domain)
     except:
-        return domain, None
+        return domain
     finally:
         enablePrint()
-    return domain, result.status
+    if result.expiration_date:
+        return " "
+    else:
+        return domain
 
 def check_available(matches):
     print('checking availability')
     available=[]
     for match in matches:
         if(check_domain(match)):
-            print("found "+match+" available!")
             available.append(match)
     return available
 
@@ -85,13 +87,13 @@ if __name__ == '__main__':
     domains = matches
 
     results = []
-    with Pool(processes=32) as pool:  # <-- select here how many processes do you want
-        for domain, status in tqdm(
+    with Pool(processes=64) as pool:  # <-- select here how many processes do you want
+        for domain in tqdm(
             pool.imap_unordered(check_domain, domains), total=len(domains)
         ):
-            results.append((domain, not bool(status)))
+            results.append(domain)
 
-    df = pd.DataFrame(results, columns=["domain", "is_free"])
+    df = pd.DataFrame(results, columns=["domain"])
     print(df.drop_duplicates())
 
     write_matches_to_file(results, filename="results.txt")
